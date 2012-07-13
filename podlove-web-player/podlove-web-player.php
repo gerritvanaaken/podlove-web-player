@@ -21,73 +21,13 @@ which was adapted from: http://videojs.com/ plugin
 
 $podlovePlayerIndex = 1;
 
-define('PODLOVEWEBPLAYER_DIR', plugin_dir_url(__FILE__));
-define('PODLOVEWEBPLAYER_PATH', plugin_dir_path(__FILE__));
+define('PODLOVEWEBPLAYER_FILE', __FILE__);
+define('PODLOVEWEBPLAYER_DIR', plugin_dir_url(PODLOVEWEBPLAYER_FILE));
+define('PODLOVEWEBPLAYER_PATH', plugin_dir_path(PODLOVEWEBPLAYER_FILE));
 define('PODLOVEWEBPLAYER_MEJS_DIR', PODLOVEWEBPLAYER_DIR . 'mediaelement/');
 
-/* Runs when plugin is activated */
-
-function podlove_pwp_install() {
-	add_option('pwp_video_skin', '');
-	add_option('pwp_script_on_demand', false);
-
-	add_option('pwp_default_video_height', 270);
-	add_option('pwp_default_video_width', 480);
-	add_option('pwp_default_video_type', '');
-
-	add_option('pwp_default_audio_height', 30);
-	add_option('pwp_default_audio_width', 400);
-	add_option('pwp_default_audio_type', '');
-}
-
-register_activation_hook(__FILE__, 'podlove_pwp_install');
-
-/* Runs on plugin deactivation */
-
-function podlove_pwp_remove() {
-	delete_option('pwp_video_skin');
-	delete_option('pwp_script_on_demand');
-
-	delete_option('pwp_default_video_height');
-	delete_option('pwp_default_video_width');
-	delete_option('pwp_default_video_type');
-
-	delete_option('pwp_default_audio_height');
-	delete_option('pwp_default_audio_width');
-	delete_option('pwp_default_audio_type');
-}
-
-register_deactivation_hook(__FILE__, 'podlove_pwp_remove');
-
-/* create custom plugin settings menu */
-
+// Backend settings
 include_once(PODLOVEWEBPLAYER_PATH . 'settings.php');
-
-function podlove_pwp_create_menu() {
-	// create new top-level menu
-	add_options_page('Podlove Web Player Options', 'Podlove Web Player', 'administrator', __FILE__, 'podlove_pwp_settings_page');
-
-	// call register settings function
-	add_action('admin_init', 'podlove_pwp_register_settings');
-}
-
-add_action('admin_menu', 'podlove_pwp_create_menu');
-
-
-function podlove_pwp_register_settings() {
-	//register our settings
-	register_setting('pwp_settings', 'pwp_video_skin');
-	register_setting('pwp_settings', 'pwp_script_on_demand');
-
-	register_setting('pwp_settings', 'pwp_default_video_height');
-	register_setting('pwp_settings', 'pwp_default_video_width');
-	register_setting('pwp_settings', 'pwp_default_video_type');
-
-	register_setting('pwp_settings', 'pwp_default_audio_height');
-	register_setting('pwp_settings', 'pwp_default_audio_width');
-	register_setting('pwp_settings', 'pwp_default_audio_type');
-}
-
 
 // Javascript
 
@@ -149,6 +89,13 @@ function podlove_pwp_media_shortcode($tagName, $atts) {
 		'skin' => get_option('pwp_video_skin'),
 		'autoplay' => '',
 		'loop' => '',
+
+		'title' => get_the_title(),
+		'cover' => get_option('pwp_default_cover'),
+
+		'tags' => get_option('pwp_default_tags'),
+
+		'tools' => get_option('pwp_default_tools'),
 
 		// old ones
 		'duration' => 'true',
@@ -285,14 +232,36 @@ function podlove_pwp_media_shortcode($tagName, $atts) {
 		$dimensions = 'width="' . $width . '" height="' . $height . '"';
 	}
 
+	// Tools (Buttons etc.)
+	$toolSnippets = array();
+
+	// Flattr Button
+	$toolSnippets['flattr'] = '<a class="FlattrButton" title="' . $title . '" ';
+	$toolSnippets['flattr'] .= 'data-flattr-uid="' . get_option('pwp_flattr_uid') . '" ';
+	$toolSnippets['flattr'] .= 'data-flattr-category="' . get_option('pwp_flattr_category') . '" ';
+	$toolSnippets['flattr'] .= 'data-flattr-tags="' . $tags . '" ';
+	$toolSnippets['flattr'] .= 'data-flattr-button="' . get_option('pwp_flattr_button') . '" ';
+	$toolSnippets['flattr'] .= 'data-flattr-popout="' . (get_option('pwp_flattr_popout') ? 1 : 0) . '" ';
+	$toolSnippets['flattr'] .= 'href="' . get_permalink() . '" ';
+	$toolSnippets['flattr'] .= '>Podcast: ' . $title . ' - ' . get_bloginfo('name') . '</a>';
+
+	$cover = podlove_pwp_render_cover($cover);
+	$title = podlove_pwp_render_title($title);
+	$tools = podlove_pwp_render_tools($tools, $toolSnippets);
+
 	//build actual html player code
 	$mediahtml = <<<_end_
 
-	<div class="mediaelementjs_player_container">
+	<div class="pwp_container">
+		<div class="pwp_header">
+			{$title}
+			{$cover}
+			{$tools}
+		</div>
 
-	<{$tagName} id="wp_pwp_{$podlovePlayerIndex}" {$dimensions} controls {$attributes_string} class="{$skin_class}" data-mejsoptions="{$options_string}">
-		{$sources_string}
-	</{$tagName}>
+		<{$tagName} id="wp_pwp_{$podlovePlayerIndex}" {$dimensions} controls {$attributes_string} class="{$skin_class}" data-mejsoptions="{$options_string}">
+			{$sources_string}
+		</{$tagName}>
 _end_;
 
 	// Chapters Table and Behaviour
@@ -308,35 +277,37 @@ _end_;
 }
 
 
-function podlove_pwp_render_chapters($custom_field) {
+function podlove_pwp_render_chapters($chapters) {
 	global $post;
 	global $podlovePlayerIndex;
-	$custom_field = trim($custom_field);
+	$chapters = trim($chapters);
 
-	if ($custom_field != '') {
-		if (substr($custom_field, 0, 7) == 'http://'
-			|| substr($custom_field, 0, 8) == 'https://') {
-			$chapters = trim(file_get_contents($custom_field));
-		} else {
-			$chapters = get_post_custom_values($custom_field, $post->ID);
-		}
-
-		if ($chapters && $chapters = podlove_pwp_chapters_from_string($chapters[0])) {
-			$output = '<table rel="wp_pwp_' . $podlovePlayerIndex . '" class="pwp_chapters">';
-			$output .= '<caption>Podcast Chapters</caption>';
-			$output .= '<thead><tr><th scope="col">Timecode</th><th scope="col">Title</th></tr></thead>';
-			$output .= '<tbody>';
-			foreach ($chapters as $i => $chapter) {
-				$end = ($i == (count($chapters) - 1)) ? '9999999' : $chapters[$i + 1]['timecode'];
-				$output .= '<tr data-start="' . $chapter['timecode'] . '" data-end="' . $end . '">';
-				$output .= '<td class="timecode"><code>' . $chapter['human_timecode'] . '</code></td>';
-				$output .= '<td class="title">' . $chapter['title'] . '</td>';
-				$output .= '</tr>';
-			}
-			$output .= '</tbody></table>';
-			return $output;
-		}
+	if (empty($chapters)) {
+		return;
 	}
+
+	$isChaptersExternal = substr($chapters, 0, 7) == 'http://'
+			|| substr($chapters, 0, 8) == 'https://';
+
+	$chapters = $isChaptersExternal ? trim(file_get_contents($chapters)) :
+			get_post_custom_values($chapters, $post->ID);
+
+	if ($chapters && $chapters = podlove_pwp_chapters_from_string($chapters[0])) {
+		$output = '<table rel="wp_pwp_' . $podlovePlayerIndex . '" class="pwp_chapters">';
+		$output .= '<caption>Podcast Chapters</caption>';
+		$output .= '<thead><tr><th scope="col">Timecode</th><th scope="col">Title</th></tr></thead>';
+		$output .= '<tbody>';
+		foreach ($chapters as $i => $chapter) {
+			$end = ($i == (count($chapters) - 1)) ? '9999999' : $chapters[$i + 1]['timecode'];
+			$output .= '<tr data-start="' . $chapter['timecode'] . '" data-end="' . $end . '">';
+			$output .= '<td class="timecode"><code>' . $chapter['human_timecode'] . '</code></td>';
+			$output .= '<td class="title">' . $chapter['title'] . '</td>';
+			$output .= '</tr>';
+		}
+		$output .= '</tbody></table>';
+		return $output;
+	}
+
 	return false;
 }
 
@@ -377,6 +348,34 @@ function podlove_pwp_chapters_from_string($chapstring) {
 	}
 
 	return count($chapters) > 0 ? $chapters : false;
+}
+
+function podlove_pwp_render_cover($cover) {
+	return $cover ? '<img alt="" src="' . $cover . '" class="pwp_cover">' : '';
+}
+
+function podlove_pwp_render_title($title) {
+	return $title ? '<h2>' . $title . '</h2>' : '';
+}
+
+function podlove_pwp_render_tools($tools, $toolSnippets) {
+	$tools = explode(',', $tools);
+	$output = '';
+
+	if (count($tools) > 0) {
+		$output .= '<ul class="pwp_tools">';
+		foreach ($tools as $tool) {
+			$tool = trim($tool);
+			if (array_key_exists($tool, $toolSnippets)) {
+				$output .= '<li class="pwp_tool_' . $tool . '">';
+				$output .= $toolSnippets[$tool];
+				$output .= '</li>';
+			}
+		}
+		$output .= '</ul>';
+		return $output;
+	}
+	return '';
 }
 
 /* Shortcodes */

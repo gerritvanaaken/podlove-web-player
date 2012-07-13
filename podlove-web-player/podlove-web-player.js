@@ -100,7 +100,7 @@ var PODLOVE = PODLOVE || {};
 		return false;
 	}
 
-	function checkCurrentURL() {
+	function checkCurrentURL(doStartPlayer) {
 		var deepLink;
 
 		// parse deeplink
@@ -109,12 +109,15 @@ var PODLOVE = PODLOVE || {};
 		if (deepLink !== false) {
 			startAtTime = deepLink[0];
 			stopAtTime = deepLink[1];
+
+			// get first player on page and start it
+			if (doStartPlayer && players[0].play) {
+				players[0].play();
+			}
 		}
 	}
 
 	function setFragmentURL(fragment) {
-		var url;
-
 		window.location.hash = fragment;
 	}
 
@@ -175,7 +178,7 @@ var PODLOVE = PODLOVE || {};
 
 	PODLOVE.web_player = function (playerId) {
 		var deepLink,
-			player = $('#' + playerId);
+			player = document.getElementById(playerId);
 
 		players.push(player);
 
@@ -183,7 +186,7 @@ var PODLOVE = PODLOVE || {};
 		deepLink = parseTimecode(window.location.href);
 
 		if (deepLink !== false && players.length === 1) {
-			player
+			$(player)
 				.attr({preload: 'auto', autoplay: 'autoplay'});
 
 			startAtTime = deepLink[0];
@@ -197,7 +200,7 @@ var PODLOVE = PODLOVE || {};
 					$('html, body')
 						.delay(150)
 						.animate({
-							scrollTop: $('.mediaelementjs_player_container:first').offset().top - 25
+							scrollTop: $(players[0]).offset().top - 25
 						});
 				}
 			}
@@ -217,7 +220,12 @@ var PODLOVE = PODLOVE || {};
 
 		if (players.length === 1) {
 			// check if deeplink is set
-			checkCurrentURL();
+			checkCurrentURL('doStartPlayer');
+		}
+
+		// if needed load flattr js
+		if (!window.FlattrLoader && $('.FlattrButton').length > 0) {
+			$.getScript('https://api.flattr.com/js/0.6/load.js?mode=auto');
 		}
 
 		// chapters list
@@ -232,11 +240,12 @@ var PODLOVE = PODLOVE || {};
 
 				// If there is only one player also set deepLink
 				if (players.length === 1) {
-					return setFragmentURL('t=' + generateTimecode([startTime, endTime]));
+					setFragmentURL('t=' + generateTimecode([startTime, endTime]));
+				} else {
+					// Basic Chapter Mark function (without deeplinking)
+					player.setCurrentTime(startTime);
 				}
 
-				// Basic Chapter Mark function (without deeplinking)
-				player.setCurrentTime(startTime);
 				if (player.pluginType !== 'flash') {
 					player.play();
 				}
@@ -256,14 +265,18 @@ var PODLOVE = PODLOVE || {};
 				}, {player: player});
 
 				// handle browser history navigation
-				$(window).bind('hashchange onpopstate', checkCurrentURL);
+				$(window).bind('hashchange onpopstate', function () {
+					checkCurrentURL();
+				});
 
 				// handle links on the page
 				// links added later are not handled!
 				$('a').bind('click', function () {
 					// if we stay on the page after clicking a link
 					// check if theres a new deeplink
-					window.setTimeout(checkCurrentURL, 100);
+					window.setTimeout(function () {
+						checkCurrentURL('doStartPlayer');
+					}, 100);
 				});
 			}
 

@@ -1,49 +1,84 @@
-.mejs-container {
+.pwp_container {
 	min-height: 30px;
+	margin-bottom: 1.5em;
 }
 
-.mediaelementjs_player_container {
-	clear: both;
+.pwp_container,
+.pwp_container .pwp_header {
 	position: relative;
-	padding-bottom: 1.5em;
+	*zoom: 1;
 }
 
-.mediaelementjs_player_container:after {
-	content: ".";
-	color: #fff;
-	font-size: 1px;
-	height: 1px;
-	display: block;
-	overflow: hidden;
+.pwp_container:before,
+.pwp_container .pwp_header:before,
+.pwp_container:after,
+.pwp_container .pwp_header:after {
+	content: "";
+	display: table;
+}
+
+.pwp_container:after,
+.pwp_container .pwp_header:after {
 	clear: both;
 }
 
-.mediaelementjs_player_container .pwp_chapters {
-	display: none; /* only show if js works */
-	margin-bottom: 0!important;
+.pwp_container .pwp_chapters {
+	display: none; /* shown by js */
+	margin-bottom: 0 !important;
 }
 
 /*
  * Hide only visually, but have it available for screenreaders: h5bp.com/v
  */
-.mediaelementjs_player_container .pwp_chapters thead,
-.mediaelementjs_player_container .pwp_chapters caption {
-    border: 0;
-    clip: rect(0 0 0 0);
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    padding: 0;
-    position: absolute;
-    width: 1px;
+.pwp_container .pwp_chapters thead,
+.pwp_container .pwp_chapters caption {
+		border: 0;
+		clip: rect(0 0 0 0);
+		height: 1px;
+		margin: -1px;
+		overflow: hidden;
+		padding: 0;
+		position: absolute;
+		width: 1px;
+}
+
+.pwp_container .pwp_cover {
+/*	float: left;
+	margin-right: 10px; */
+	max-height: 100px;
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+
+.pwp_container .pwp_header {
+	min-height: 100px;
+	margin-bottom: 1em;
+}
+
+.pwp_container .pwp_tools {
+	display: block;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.pwp_container .pwp_tools li {
+	display: inline-block;
+	*display: inline; *zoom: 1;
+	vertical-align: top;
+}
+
+.pwp_container .pwp_tools a.FlattrButton {
+	display: none; /* replaced by js */
 }
 
 
-
-.mediaelementjs_player_container .pwp_chapters tr.active {
+.pwp_container .pwp_chapters .active {
 	background: whiteSmoke;
 }
 
-.mediaelementjs_player_container .pwp_chapters tr td {
-	padding: 6px;
+.pwp_container .pwp_chapters th,
+.pwp_container .pwp_chapters td {
+	padding-left: 6px;
 }
