@@ -138,7 +138,7 @@ var PODLOVE = PODLOVE || {};
             if (!isEnabled && isBuffered) {
                 deepLink = '#t=' + generateTimecode([startTime, endTime]);
 
-                mark.data('enabled', true).addClass('loaded').find('button').removeAttr('disabled');
+                mark.data('enabled', true).addClass('loaded').find('button').prop('disabled', false);
                 /*
 				if (doLinkMarks && mark.find('a').length === 0) {
 					mark.find('td.title')
