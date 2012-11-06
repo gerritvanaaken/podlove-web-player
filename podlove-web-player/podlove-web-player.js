@@ -290,11 +290,11 @@ var PODLOVE = PODLOVE || {};
             canplay = true;
 
             // add duration of final chapter
-            marks.find('.timecode code').eq(-1).each(function () {
+            marks.find('.timecode code').last().each(function () {
                 var start = Math.floor($(this).closest('tr').data('start'));
                 var end = Math.floor(player.duration);
                 var duration = end - start;
-                $(this).text(generateTimecode(new Array(duration, duration)));
+                $(this).text(generateTimecode([duration, duration]));
             });
 
             // add Deeplink Behavior if there is only one player on the site
