@@ -1,6 +1,6 @@
 var PODLOVE = PODLOVE || {};
 
-(function ($) {
+(function ($, window, undefined) {
     'use strict';
 
     var startAtTime = false,
@@ -344,4 +344,4 @@ var PODLOVE = PODLOVE || {};
 
         });
     };
-}(jQuery));
+}(jQuery, window));
