@@ -174,17 +174,21 @@ var PODLOVE = PODLOVE || {};
         }
     }
 
-    PODLOVE.web_player = function (playerId) {
-        var deepLink,
-        player = $('#' + playerId);
+    /**
+     * wraps a given media element with the enhanced web player
+     * @param playerId string
+     */
+    PODLOVE.web_player = function web_player(playerId) {
 
-        players.push(player);
+        var deepLink, jqPlayer = $('#' + playerId);
+
+        players.push(jqPlayer);
 
         // parse deeplink
         deepLink = parseTimecode(window.location.href);
 
         if (deepLink !== false && players.length === 1) {
-            player.attr({
+            jqPlayer.attr({
                 preload: 'auto',
                 autoplay: 'autoplay'
             });
@@ -195,7 +199,7 @@ var PODLOVE = PODLOVE || {};
 
 
 
-        window.MediaElementPlayer('#' + playerId, {
+        jqPlayer.mediaelementplayer({
             success: function (player) {
                 PODLOVE.web_player.addBehavior(player);
                 if (deepLink !== false && players.length === 1) {
@@ -217,10 +221,10 @@ var PODLOVE = PODLOVE || {};
     PODLOVE.web_player.addBehavior = function (player) {
 
         var jqPlayer = $(player),
-            playerId = jqPlayer.attr('id'),
-            list = $('table[rel=' + playerId + ']'),
+            container = jqPlayer.closest('.mediaelementjs_player_container'),
+            list = container.find('table'),
             marks = list.find('tr'),
-            metainfo = list.closest('.mediaelementjs_player_container').find('.podlovemeta'),
+            metainfo = container.find('.podlovemeta'),
             canplay = false;
 
         if (metainfo.length === 1) {
