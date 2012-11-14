@@ -178,9 +178,16 @@ var PODLOVE = PODLOVE || {};
      * wraps a given media element with the enhanced web player
      * @param playerId string
      */
-    PODLOVE.web_player = function web_player(playerId) {
+    $.fn.web_player = PODLOVE.web_player = function web_player(playerId) {
 
-        var deepLink, jqPlayer = $('#' + playerId);
+        // handle every element in the jquery collection
+        if( this instanceof $){
+            return this.each(web_player);
+        }
+
+        // if the first parameter is not a string, assume
+        // that the context is an element
+        var deepLink, jqPlayer = typeof playerId === 'string' ? $('#' + playerId) : $(this);
 
         players.push(jqPlayer);
 
