@@ -167,10 +167,11 @@ function podlove_pwp_media_shortcode($tagName, $atts) {
 		'webm' => '',
 		'flv' => '',
 		'ogg' => '',
+		'opus' => '',
 		'poster' => '',
 		'width' => get_option('pwp_default_' . $tagName . '_width'),
 		'height' => get_option('pwp_default_' . $tagName . '_height'),
-		'type' => get_option('pwp_default_' . $tagName . '_type'),
+		'type' => '',
 		'preload' => 'none',
 		'skin' => get_option('pwp_video_skin'),
 		'autoplay' => '',
@@ -200,38 +201,40 @@ function podlove_pwp_media_shortcode($tagName, $atts) {
 
 	if ($type) {
 		$attributes[] = 'type="' . $type . '"';
+	} elseif (get_option('pwp_default_' . $tagName . '_type')) {
+		$attributes[] = 'type="' . get_option('pwp_default_' . $tagName . '_type').'"';
 	}
 
-/*
 	if ($src) {
-		$attributes[] = 'src="'.htmlspecialchars($src).'"';
-		$flash_src = htmlspecialchars($src);
-	}
-*/
-
-	if ($src) {
-
+		$src = trim($src); 
 		// does it have an extension?
-		if (substr($src, strlen($src) - 4, 1) == '.') {
+		$suffixlength = strlen(substr($src, strrpos($src, ".")));
+		if ($suffixlength == 4 || $suffixlength == 5) {
 			$attributes[] = 'src="' . htmlspecialchars($src) . '"';
 			$flash_src = htmlspecialchars($src);
 		}
 	}
 
 	// <source> tags
+
 	if ($mp4) {
 		$sources[] = '<source src="' . htmlspecialchars($mp4) . '" type="' . $tagName . '/mp4" />';
 		$flash_src = htmlspecialchars($mp4);
+	}
+	if ($webm) {
+		$sources[] = '<source src="' . htmlspecialchars($webm) . "\" type='video/webm; codecs=\"vp8, vorbis\"' />";
+	}
+	if ($ogg && $tagName == "audio") {
+		$sources[] = '<source src="' . htmlspecialchars($ogg) . "\" type='audio/ogg; codecs=vorbis' />";
+	} elseif ($ogg && $tagName == "video") {
+		$sources[] = '<source src="' . htmlspecialchars($ogg) . "\" type='video/ogg; codecs=\"theora, vorbis\"' />";
 	}
 	if ($mp3) {
 		$sources[] = '<source src="' . htmlspecialchars($mp3) . '" type="' . $tagName . '/mp3" />';
 		$flash_src = htmlspecialchars($mp3);
 	}
-	if ($webm) {
-		$sources[] = '<source src="' . htmlspecialchars($webm) . '" type="' . $tagName . '/webm" />';
-	}
-	if ($ogg) {
-		$sources[] = '<source src="' . htmlspecialchars($ogg) . '" type="' . $tagName . '/ogg" />';
+	if ($opus) {
+		$sources[] = '<source src="' . htmlspecialchars($opus) . "\" type='" . $tagName . "/ogg; codecs=opus' />";
 	}
 	if ($flv) {
 		$sources[] = '<source src="' . htmlspecialchars($flv) . '" type="' . $tagName . '/flv" />';
@@ -321,7 +324,7 @@ function podlove_pwp_media_shortcode($tagName, $atts) {
 		$dimensions = 'width="' . $width . '" height="' . $height . '"';
 	}
 
-	//prepare podlove meta info
+	//prepare podlove meta info (enriched player)
 	$podloveMeta = "";
 	if ($tagName == 'audio' && ($poster || $title || $subtitle || $summary)) {
 		$podloveMeta .= '<div class="podlovemeta">';
@@ -399,17 +402,22 @@ function podlove_pwp_render_chapters($link_chapters, $custom_field) {
 				// prepare data
 				$is_final_chapter = $i == count($chapters) - 1;
 				if ($is_final_chapter) {
-					$duration = "0";
+					$chapterduration = "0";
 					$end = '99999999';
 				} else {
-					$duration = (int) $chapters[$i + 1]['timecode'] -  (int) $chapter['timecode'];
+					$chapterduration = (int) $chapters[$i + 1]['timecode'] -  (int) $chapter['timecode'];
 					$end = $chapters[$i + 1]['timecode'];
 				}
+				$chapterduration = podlove_pwp_sec2timecode($chapterduration);
 				$deeplink = get_permalink();
+
 				
 				// deeplink, start and end
-				$deeplink_singlechapter .= '#t=' . $chapter['human_timecode'] .
+				$deeplink_singlechapter = '#t=' . $chapter['human_timecode'] .
 					(!$is_final_chapter ? ',' . $chapters[$i + 1]['human_timecode'] : '');
+				if (!is_singular()) {
+					$deeplink_singlechapter = get_permalink().$deeplink_singlechapter;
+				}
 
 				// render html
 				$output .= '<tr data-start="' . $chapter['timecode'] . '" data-end="' . $end . '">';
@@ -417,11 +425,14 @@ function podlove_pwp_render_chapters($link_chapters, $custom_field) {
 					$linkclass = "";
 					if ($link_chapters != 'all') { $linkclass = " disabled"; }
 					$output .= '<td class="chapterplay">';
-					$output .= '<button data-start="' . $deeplink . '"' . $linkclass . '><span>»</span></button>';
+					$output .= '<button title="play chapter" data-start="' . $deeplink . '"' . $linkclass . '><span>»</span></button>';
 					$output .= '</td>';
 				}
-				$output .= '<td class="title">' . $chapter['title'] . '</td>';
-				$output .= '<td class="timecode"><code>'. podlove_pwp_sec2timecode($duration) .'</code></td>';
+				$output .= '<td class="title">' . $chapter['title'] . '</td>'."\n";
+				$output .= '<td class="timecode">'."\n";
+				$output .= '<code>' . $chapterduration.'</code>'."\n";
+				$output .= '<a class="deeplink" href="'.$deeplink_singlechapter.'" title="chapter deeplink">#</a> '."\n";
+				$output .= '</td>'."\n";
 				$output .= '</tr>';
 			}
 			$output .= '</tbody></table>';
@@ -562,7 +573,12 @@ function podlove_pwp_enclosure($content) {
 	{
 		foreach($enclosures as $enclosure) {
 			$type = substr($enclosure[2], 0, strpos($enclosure[2], "/"));
-			$content = do_shortcode('[podlove'.$type.' type="'.$enclosure[2].'" src="'.$enclosure[0].'"]').$content;
+			$pwpcode = do_shortcode('[podlove'.$type.' type="'.$enclosure[2].'" src="'.$enclosure[0].'"]');
+			if (get_option('pwp_enclosure_bottom') == true) {
+				$content = $content.$pwpcode;
+			} else {
+				$content = $pwpcode.$content;
+			}
 		}
 	}
 	return $content;
