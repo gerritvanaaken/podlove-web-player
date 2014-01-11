@@ -26,9 +26,6 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
-
-
 // Prevent conflicts with already running versions of PWP
 if (!function_exists( 'podlovewebplayer_install' ) && !function_exists( 'podlove_pwp_install' )) {
 
@@ -269,6 +266,10 @@ function podlovewebplayer_render_player( $tag_name, $atts ) {
 
 	if ( $poster ) {
 		$init_options['poster'] = htmlspecialchars( $poster, ENT_QUOTES );
+	} elseif (isset($wp_options['main_poster'])) {
+		if ($wp_options['main_poster'] != '') {
+			$init_options['poster'] = htmlspecialchars( $wp_options['main_poster'], ENT_QUOTES );
+		}
 	}
 	if ( $title ) {
 		$init_options['title'] = $title;
@@ -419,7 +420,6 @@ function podlovewebplayer_get_enclosed( $post_id ) {
 
 function podlovewebplayer_enclosures( $content ) {
 	global $post;
-
 	$wp_options = get_option('podlovewebplayer_options');
 
 	$there_are_enclosures = (
@@ -443,7 +443,6 @@ function podlovewebplayer_enclosures( $content ) {
 
 	$found_files = array();
 	$duration = "";
-	
 
 	foreach( $enclosures as $enclosure ) {
 
@@ -514,7 +513,5 @@ function podlovewebplayer_init() {
 add_action('init', 'podlovewebplayer_init');
 	
 }
-
-
 
 ?>
