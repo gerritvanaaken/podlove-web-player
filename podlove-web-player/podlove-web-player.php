@@ -268,7 +268,16 @@ function podlovewebplayer_render_player( $tag_name, $atts ) {
 		$init_options['poster'] = htmlspecialchars( $poster, ENT_QUOTES );
 	} elseif (isset($wp_options['main_poster'])) {
 		if ($wp_options['main_poster'] != '') {
-			$init_options['poster'] = htmlspecialchars( $wp_options['main_poster'], ENT_QUOTES );
+			$pwp_posters = explode("\n", $wp_options['main_poster']);
+			$pwp_categories = get_the_category();
+			foreach ($pwp_posters as $pwp_poster) {
+				$pwp_poster = explode('=', $pwp_poster, 2);
+				foreach ($pwp_categories as $pwp_category) {
+					if (trim($pwp_poster[0]) == $pwp_category->name) {
+						$init_options['poster'] = htmlspecialchars(trim($pwp_poster[1]), ENT_QUOTES );
+					}
+				}
+			}
 		}
 	}
 	if ( $title ) {
@@ -307,7 +316,7 @@ function podlovewebplayer_render_player( $tag_name, $atts ) {
 		{$sources_string}
 		{$fallback}
 	</{$tag_name}>";
-	$return .= "\n\n<script>jQuery('#podlovewebplayer_{$podlovewebplayer_index}').podlovewebplayer(" . json_encode( $init_options ) . ");</script>\n";
+	$return .= "\n\n<script>var pwp_settings_{$podlovewebplayer_index} = " . json_encode( $init_options ) . "; window.setTimeout(function() {jQuery('#podlovewebplayer_{$podlovewebplayer_index}').podlovewebplayer(pwp_settings_{$podlovewebplayer_index});}, 200);</script>\n";
 	$podlovewebplayer_index++;
 	return $return;
 }
