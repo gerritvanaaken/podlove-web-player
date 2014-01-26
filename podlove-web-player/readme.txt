@@ -225,11 +225,16 @@ Earlier versions of this plugin could handle alternative shortcodes, too: [audio
 == Changelog ==
 
 = trunk (2.1.0) =
-* //Playback Speed changeable
-* //Style Editor
-* //smaller and bigger player styles
+* Style Editor
+* smaller and bigger player styles
 * save playtime in cookies
 * mp4chaps image support
+
+= 2.0.19 =
+* mejs update
+* link to timecode
+* default posters configurable
+* get chapters from other sources
 
 = 2.0.18 =
 * compatible with Wordpress theme Twenty-Fourteen
